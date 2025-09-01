@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const verifyAuth = async () => {
             try {
-                const res = await fetch("http://localhost:8000/api/user/verify", {
+                const res = await fetch("https://mp3-backend-f7n3.onrender.com/api/user/verify", {
                     method: "GET",
                     credentials: "include",
                 });

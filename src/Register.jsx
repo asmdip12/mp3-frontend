@@ -113,7 +113,7 @@ toast.warning("Please verify your identity first.", {
 
   const completeSignup = async (jsonUrl) => {
     try {
-      const response = await axios.post('http://localhost:8000/api/user/signup', {
+      const response = await axios.post('https://mp3-backend-f7n3.onrender.com/api/user/signup', {
         name,
         password,
         url: jsonUrl,
