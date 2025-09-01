@@ -56,15 +56,14 @@ const MissionParivartan = () => {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
       lineHeight: '1.6',
       color: '#333',
-      marginTop:
-      windowWidth < 480
-        ? "-15px" // mobile
-        : windowWidth < 768
-        ? "-10px" // tablet
-        : "110px", 
-      padding: 0,
+      // marginTop:
+      // windowWidth < 480
+      //   ? "-15px" // mobile
+      //   : windowWidth < 768
+      //   ? "-10px" // tablet
+      //   : "110px", 
+      // padding: 0,
     },
-// gh
     // Hero section styles
     hero: {
       background: 'linear-gradient(135deg, #4caf50, #66bb6a)',
@@ -124,7 +123,7 @@ const MissionParivartan = () => {
     // Main content styles
     mainContent: {
       maxWidth: '100%',
-      margin: '80px 0 0 0',
+      // margin: '80px 0 0 0',
       width: '100%',
       background:'#edfdf5',
       
@@ -414,7 +413,9 @@ const MissionParivartan = () => {
       <main style={styles.mainContent}>
         {/* About Organization Section */}
       <section id="about" style={styles.section}>
-          <h2 style={styles.sectionTitle}>About Mission Parivartan Organisation</h2>
+<h2 style={{ ...styles.sectionTitle, marginTop: '0px',paddingTop:'80px' }}>
+  About Mission Parivartan Organisation
+</h2>
           <p style={{
             textAlign: 'center',
             fontSize: '1.2rem',

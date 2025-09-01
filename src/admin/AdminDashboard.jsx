@@ -15,7 +15,7 @@ export default function AdminDashboard() {
     let isadmin = String(import.meta.env.VITE_ADMIN) === (auth.user?.role);
     if (isadmin) {
       setPage(1);
-      fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/getformdata", {
+      fetch("http://localhost:8000/api/treeform/getformdata", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         credentials: "include"

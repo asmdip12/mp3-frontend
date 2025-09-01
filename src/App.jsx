@@ -1,4 +1,7 @@
 import React from 'react';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
@@ -15,6 +18,8 @@ import TreeForm from './TreeForm'; // ✅ Import TreeForm
 import SignupForm from './Register';
 import LoginForm from './LoginModal';     // ✅ Import AdminLogin
 import AdminDashboard from './admin/AdminDashboard';
+import ProfilePage from './Profile/Profile';
+
 
 
 function AppContent() {
@@ -35,6 +40,7 @@ function AppContent() {
           <Route path="/TreeForm" element={<TreeForm />} /> ✅ New Route
           
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+<Route path="/profile" element={<ProfilePage />} />
 
         </Routes>
       </main>
@@ -48,6 +54,18 @@ export default function App() {
    
       <Router>
         <AppContent />
+        <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light" // or "dark"
+      />
       </Router>
     
   );

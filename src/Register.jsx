@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Register.css';
+import { toast } from "react-toastify";
+
 
 export default function SignupForm() {
   const [name, setName] = useState('');
@@ -60,13 +62,18 @@ export default function SignupForm() {
           });
 
           setUserJsonUrl(userObj.user_json_url);
-          alert(`✅ Email verified!\nClick create account to continue.`);
-          // console.log(userObj.user_json_url);
+toast.success("✅ Email verified! Click create account to continue.", {
+  position: "top-right",
+  autoClose: 4000, // 4s
+});          // console.log(userObj.user_json_url);
           
           await completeSignup(userObj.user_json_url); // Auto-signup for email
         } catch (err) {
           // console.error('Error fetching data:', err.message);
-          alert('Email verification failed!');
+          toast.error("Email verification failed!", {
+            position: "top-right",
+            autoClose: 4000, // 4s
+          });
         }
       };
     }
@@ -87,13 +94,17 @@ export default function SignupForm() {
     e.preventDefault();
 
     if (!(name && password.length >= 6)) {
-      alert('Please complete all required fields.');
-      return;
+toast.error("Please complete all required fields.", {
+  position: "top-right",
+  autoClose: 3000, // 3s
+});      return;
     }
 
     if (!userJsonUrl) {
-      alert('Please verify your identity first.');
-      setPendingSignup(true);
+toast.warning("Please verify your identity first.", {
+  position: "top-right",
+  autoClose: 4000, // auto close after 4 seconds
+});      setPendingSignup(true);
       return;
     }
 
@@ -102,23 +113,30 @@ export default function SignupForm() {
 
   const completeSignup = async (jsonUrl) => {
     try {
-      const response = await axios.post('https://mp3-backend-f7n3.onrender.com/api/user/signup', {
+      const response = await axios.post('http://localhost:8000/api/user/signup', {
         name,
         password,
         url: jsonUrl,
       });
       if(response) {
-        alert('Signup successful!');
-        // console.log(response.data);
+toast.success(" Signup successful!", {
+  position: "top-right",
+  autoClose: 3000, // closes after 3 seconds
+});        // console.log(response.data);
         navigate('/');
       }
       else {
-        alert('Signup failed!');
-     
+        toast.error("Signup failed!", {
+          position: "top-right",
+          autoClose: 3000, // closes after 3 seconds
+        });
       }
       
     } catch (err) {
-      alert('Signup failed!');
+      toast.error("Signup failed!", {
+        position: "top-right",
+        autoClose: 3000, // closes after 3 seconds
+      });
       // console.error(err.response?.data || err.message);
     } finally {
       setPendingSignup(false);

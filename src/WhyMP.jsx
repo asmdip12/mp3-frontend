@@ -474,9 +474,7 @@ const WhyMissionParivartan = () => {
           
           {/* Section 1: Why Mission Parivartan is Different */}
           <section className="section-1">
-            <div className="section-badge">
-              
-            </div>
+            
             <h2 className="section-title">
               Why <span style={{color: '#059669'}}>Mission Parivartan</span> is Different
             </h2>

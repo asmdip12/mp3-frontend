@@ -569,8 +569,6 @@ const MissionParivartanHomepage = () => {
         }
       // `}</style>
 
-      <div>bscvsbvcb
-      </div>
 
       {/* Hero Section */}
       <section className="hero">
@@ -773,10 +771,10 @@ const MissionParivartanHomepage = () => {
       <section className="join-section">
         <div className="join-content">
           <h2>Join Our Mission</h2>
-          <p>Login to start your tree planting journey and track your environmental impact</p>
+          <p>Sign in to start your tree planting journey and track your environmental impact</p>
           {!auth.user && (
         <button className="join-button" onClick={handleButtonClick1}>
-          Login to Get Started
+          Sign in to Get Started
         </button>
       )}
         </div>

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { toast } from "react-toastify";
 
 export default function TreeForm() {
     const {auth} = useAuth();
@@ -64,7 +65,7 @@ export default function TreeForm() {
         submittedby: auth.user.id
       };
   
-      const response = await fetch('https://mp3-backend-f7n3.onrender.com/api/treeform/subform', {
+      const response = await fetch('http://localhost:8000/api/treeform/subform', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -74,8 +75,10 @@ export default function TreeForm() {
   
       if (!response.ok) throw new Error('Network response was not ok');
   
-      alert('Form submitted successfully!');
-      setFormData({
+toast.success("✅ Form submitted successfully!", {
+  position: "top-right",
+  autoClose: 3000, // closes after 3s
+});      setFormData({
         fullName: '',
         department: '',
         contactNo: '',
@@ -86,7 +89,10 @@ export default function TreeForm() {
       navigate('/');
     } catch (err) {
       console.error('Error submitting form:', err);
-      alert('Failed to submit the form. Please check your console for more info.');
+      toast.error("Failed to submit the form. Please check your console for more info.", {
+        position: "top-right",
+        autoClose: 3000, // closes after 3s
+      });
     }
   };
   

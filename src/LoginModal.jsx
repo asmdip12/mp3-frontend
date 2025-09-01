@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { toast } from "react-toastify";
 
 export default function LoginForm() {
   const [loginWith, setLoginWith] = useState('email'); // 'email' or 'phone'
@@ -15,15 +16,20 @@ export default function LoginForm() {
     e.preventDefault();
     try {
       const response = await axios.post(
-        'https://mp3-backend-f7n3.onrender.com/api/user/login',
+        'http://localhost:8000/api/user/login',
         { email, phoneno, password },
         { withCredentials: true }
       );
-      alert('Login successful!');
-      login(response.data.user);
+toast.success("✅ Login successful!", {
+  position: "top-right",
+  autoClose: 3000, // 3 seconds
+});      login(response.data.user);
       navigate('/TreeForm');
     } catch (err) {
-      alert('Login failed!');
+      toast.error("Login failed!", {
+        position: "top-right",
+        autoClose: 3000, // 3 seconds
+      });
     }
   };
 
@@ -71,7 +77,7 @@ export default function LoginForm() {
           minWidth: '280px', // ✅ shrink safely
           width: '100%', // ✅ full width on mobile
           textAlign: 'left',
-          marginTop: '2rem',
+          // marginTop: '2rem',
         }}
       >
         <div
