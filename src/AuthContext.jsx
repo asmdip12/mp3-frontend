@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     }
     const logout = async () => {
         try {
-        await fetch("http://localhost:8000/api/user/logout", {
+        await fetch("https://mp3-backend-f7n3.onrender.com/api/user/logout", {
             method: "GET",
             credentials: "include", 
         });
