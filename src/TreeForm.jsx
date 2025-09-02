@@ -65,13 +65,18 @@ export default function TreeForm() {
         submittedby: auth.user.id
       };
   
-      const response = await fetch('https://mp3-backend-f7n3.onrender.com/api/treeform/subform', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(dataToSend)
-      });
+      const response = await fetch(
+  "https://mp3-backend-f7n3.onrender.com/api/treeform/subform",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(dataToSend),
+    credentials: "include"   // 🔑 send cookies along with request
+  }
+);
+
   
       if (!response.ok) throw new Error('Network response was not ok');
   
