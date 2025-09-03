@@ -48,7 +48,7 @@ export default function TreeForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting form with data:", formData);
+    // console.log("Submitting form with data:", formData);
   
     try {
       const dataToSend = {

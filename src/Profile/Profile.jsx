@@ -27,7 +27,7 @@ const [showPlaceDropdown, setShowPlaceDropdown] = useState({});
     .then((data) => {
 
       const myForms = data.filter(
-        (form) => form.submittedby?.toString() === auth.user._id?.toString()
+        (form) => form.submittedby?.toString() === auth.user.id?.toString()
       );
 
       setForms(myForms);
@@ -46,43 +46,40 @@ const [showPlaceDropdown, setShowPlaceDropdown] = useState({});
 };
 
 const handleUpdate = (formId, placeId, updatedPlace) => {
-  setForms((prevForms) => {
-    const updatedForms = prevForms.map((form) => {
-      if (form._id === formId) {
-        return {
-          ...form,
-          places: form.places.map((p) =>
-            p._id === placeId ? { ...p, ...updatedPlace } : p
-          ),
-        };
-      }
-      return form;
-    });
-
-    const updatedForm = updatedForms.find((f) => f._id === formId);
-
-    fetch(`https://mp3-backend-f7n3.onrender.com/api/treeform/updateform/${formId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedForm),
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to update form");
-        return res.json();
-      })
-      .then((savedForm) => {
-        toast.success("Place updated successfully ✅");
-        setForms((prev) =>
-          prev.map((f) => (f._id === formId ? savedForm : f))
-        );
-        setEditingPlace(null);
-      })
-      .catch((err) => console.error(err));
-
-    return updatedForms;
+  const updatedForms = forms.map((form) => {
+    if (form._id === formId) {
+      return {
+        ...form,
+        places: form.places.map((p) =>
+          p._id === placeId ? { ...p, ...updatedPlace } : p
+        ),
+      };
+    }
+    return form;
   });
+
+  const updatedForm = updatedForms.find((f) => f._id === formId);
+
+  fetch(`https://mp3-backend-f7n3.onrender.com/api/treeform/updateform/${formId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updatedForm),
+    credentials: "include",
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to update form");
+      return res.json();
+    })
+    .then((savedForm) => {
+      setForms((prev) =>
+        prev.map((f) => (f._id === formId ? savedForm : f))
+      );
+      setEditingPlace(null);
+      toast.success("Place updated successfully ✅");
+    })
+    .catch((err) => console.error(err));
 };
+
 
 
 const handleDelete = (formId) => {
@@ -99,7 +96,7 @@ const handleDelete = (formId) => {
       return res.json();
     })
     .then(() => {
-toast.success("Form deleted successfully 🗑️");
+// toast.success("Form deleted successfully 🗑️");
       // remove from local state
       setForms((prevForms) => prevForms.filter((f) => f._id !== formId));
     })
@@ -271,8 +268,8 @@ toast.success("Form deleted successfully 🗑️");
           <button
             onClick={() => {
               handleDelete(form._id);
-              toast.success("Form deleted!");
-              closeToast();
+              // toast.success("Form deleted!");
+              // closeToast();
             }}
             style={{
               backgroundColor: "#e74c3c",
