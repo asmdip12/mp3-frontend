@@ -96,7 +96,7 @@ const handleDelete = (formId) => {
       return res.json();
     })
     .then(() => {
-toast.success("Form deleted successfully 🗑️");
+toast.success("Form deleted!!");
       // remove from local state
       setForms((prevForms) => prevForms.filter((f) => f._id !== formId));
     })
