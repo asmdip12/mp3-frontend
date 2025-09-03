@@ -268,7 +268,7 @@ toast.success("Form deleted successfully 🗑️");
           <button
             onClick={() => {
               handleDelete(form._id);
-              toast.success("Form deleted!");
+              // toast.success("Form deleted!");
               closeToast();
             }}
             style={{
