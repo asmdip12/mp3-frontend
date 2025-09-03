@@ -268,8 +268,8 @@ const handleDelete = (formId) => {
           <button
             onClick={() => {
               handleDelete(form._id);
-              // toast.success("Form deleted!");
-              // closeToast();
+              toast.success("Form deleted!");
+              closeToast();
             }}
             style={{
               backgroundColor: "#e74c3c",
