@@ -19,7 +19,7 @@ import SignupForm from './Register';
 import LoginForm from './LoginModal';     // ✅ Import AdminLogin
 import AdminDashboard from './admin/AdminDashboard';
 import ProfilePage from './Profile/Profile';
-
+import PlantationForm from './PlantationForm';
 
 
 function AppContent() {
@@ -38,7 +38,7 @@ function AppContent() {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/signup" element={<SignupForm />} />
           <Route path="/TreeForm" element={<TreeForm />} /> ✅ New Route
-          
+          <Route path="/plantation" element={<PlantationForm />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
 <Route path="/profile" element={<ProfilePage />} />
 

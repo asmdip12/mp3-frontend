@@ -5,36 +5,89 @@ import { useAuth } from './AuthContext';
 import { toast } from "react-toastify";
 
 export default function TreeForm() {
-    const {auth} = useAuth();
-  const [formData, setFormData] = useState({
-    fullName: '',
-    department: '',
-    contactNo: '',
-    numPlaces: '',
-    places: []
-  });
+  const { auth } = useAuth();
 
+  const initialState = {
+    firstName: '',
+    lastName: '',
+    gender: '',
+    dob: '',
+    phone: '',
+    email: '',
+    address: {
+      state: '',
+      district: '',
+      city: '',
+      location: ''
+    },
+    occupation: '',
+    occupationDetails: {
+      schoolName: '',
+      employeeCompany: '',
+      selfBusinessName: '',
+      entrepreneurBusiness: '',
+      otherOccupation: ''
+    }
+  };
+
+  const [formData, setFormData] = useState(initialState);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: value 
-    }));
 
+    // special handling for number-of-places so we keep place entries in sync
     if (name === 'numPlaces') {
-      const num = parseInt(value) || 0;
-      const newPlaces = Array.from({ length: num }, (_, index) => 
-        formData.places[index] || {
+      const num = parseInt(value, 10) || 0;
+      setFormData(prev => {
+        const newPlaces = Array.from({ length: num }, (_, index) => prev.places[index] || {
           location: '',
           owner: '',
           numPlants: '',
           plantNames: ''
-        }
-      );
-      setFormData(prev => ({ ...prev, places: newPlaces }));
+        });
+        return { ...prev, numPlaces: value, places: newPlaces };
+      });
+      return;
     }
+
+    // if occupation changes, reset occupation-specific details
+    if (name === 'occupation') {
+      setFormData(prev => ({
+        ...prev,
+        occupation: value,
+        occupationDetails: {
+          schoolName: '',
+          employeeCompany: '',
+          selfBusinessName: '',
+          entrepreneurBusiness: '',
+          otherOccupation: ''
+        }
+      }));
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddressChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        [field]: value
+      }
+    }));
+  };
+
+  const handleOccupationDetailChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      occupationDetails: {
+        ...prev.occupationDetails,
+        [field]: value
+      }
+    }));
   };
 
   const handlePlaceChange = (index, field, value) => {
@@ -48,63 +101,83 @@ export default function TreeForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // console.log("Submitting form with data:", formData);
-  
+
     try {
       const dataToSend = {
-        fullName: formData.fullName.trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+        gender: formData.gender,
+        dob: formData.dob,
+        contactNo: Number(formData.phone),
+        email: (formData.email || '').trim(),
+        address: {
+          state: (formData.address.state || '').trim(),
+          district: (formData.address.district || '').trim(),
+          city: (formData.address.city || '').trim(),
+          location: (formData.address.location || '').trim(),
+        },
+        occupation: formData.occupation,
+        occupationDetails: formData.occupationDetails,
         department: formData.department.trim(),
-        contactNo: Number(formData.contactNo),
         numPlaces: Number(formData.numPlaces),
         places: formData.places.map(place => ({
-          location: place.location.trim(),  
-          owner: place.owner.trim(),
+          location: (place.location || '').trim(),
+          owner: (place.owner || '').trim(),
           numPlants: Number(place.numPlants),
           plantNames: (place.plantNames || '').trim()
         })),
         submittedby: auth.user.id
       };
-  
-      const response = await fetch(
-  "https://mp3-backend-f7n3.onrender.com/api/treeform/subform",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(dataToSend),
-    credentials: "include"   // 🔑 send cookies along with request
-  }
-);
 
-  
+      const response = await fetch(
+        "https://mp3-backend-f7n3.onrender.com/api/treeform/subform",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(dataToSend),
+          credentials: "include"
+        }
+      );
+
       if (!response.ok) throw new Error('Network response was not ok');
-  
-toast.success("✅ Form submitted successfully!", {
-  position: "top-right",
-  autoClose: 3000, // closes after 3s
-});      setFormData({
-        fullName: '',
-        department: '',
-        contactNo: '',
-        numPlaces: '',
-        places: []
+
+      toast.success("✅ Form submitted successfully!", {
+        position: "top-right",
+        autoClose: 3000,
       });
-  
+
+      setFormData(initialState);
       navigate('/');
     } catch (err) {
       console.error('Error submitting form:', err);
       toast.error("Failed to submit the form. Please check your console for more info.", {
         position: "top-right",
-        autoClose: 3000, // closes after 3s
+        autoClose: 3000,
       });
     }
   };
-  
+
+  // small reusable style object to keep JSX compact but retain your original inline-styling
+  const inputStyle = {
+    width: '100%',
+    padding: '0.75rem',
+    border: '1px solid #555',
+    borderRadius: '5px',
+    backgroundColor: '#2a2a2a',
+    color: 'white',
+    fontSize: '1rem'
+  };
+
+  const placeInputStyle = {
+    ...inputStyle,
+    backgroundColor: '#1c1c1c'
+  };
 
   return (
-    <div style={{ marginTop: '84px', display: 'flex', justifyContent: 'center', padding: '1rem' }}>
-
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
       <form
         onSubmit={handleSubmit}
         style={{
@@ -114,7 +187,7 @@ toast.success("✅ Form submitted successfully!", {
           padding: '2rem',
           border: '1px solid #444',
           borderRadius: '10px',
-          maxWidth: '700px',
+          maxWidth: '900px',
           width: '100%',
           backgroundColor: '#1c1c1c',
           color: 'white',
@@ -122,238 +195,137 @@ toast.success("✅ Form submitted successfully!", {
       >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ color: '#4CAF50', marginBottom: '0.5rem',fontSize:'25px' }}>🌱 Tree Plantation Registration</h2>
+          <h2 style={{ color: '#4CAF50', marginBottom: '0.5rem', fontSize: '25px' }}>🌱 Tree Plantation Registration</h2>
           <p style={{ color: '#ccc', fontSize: '1.1rem' }}>Register to become a part of this mission</p>
         </div>
 
-        {/* Full Name */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Your Full Name <span style={{ color: 'red' }}>*</span>
-          </label>
-          <input 
-            type="text" 
-            name="fullName" 
-            placeholder="आपका पूरा नाम" 
-            value={formData.fullName} 
-            onChange={handleChange} 
-            required 
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #555',
-              borderRadius: '5px',
-              backgroundColor: '#2a2a2a',
-              color: 'white',
-              fontSize: '1rem'
-            }}
-          />
-        </div>
+        {/* --- SECTION: Personal Information --- */}
+        <div style={{ border: '1px solid #555', borderRadius: '8px', padding: '1rem', backgroundColor: '#2a2a2a' }}>
+          <h3 style={{ color: '#4CAF50', marginBottom: '0.75rem' }}>Personal Information / व्यक्तिगत जानकारी</h3>
 
-        {/* Department/Organization */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Name of Department/Organization (if you are student then mention the school name) 
-            <span style={{ color: 'red' }}>*</span>
-          </label>
-          <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 0.5rem 0' }}>
-            विभाग/संस्था का नाम (यदि आप छात्र हैं तो स्कूल/कॉलेज/संस्थान का नाम)
-          </p>
-          <input 
-            type="text" 
-            name="department" 
-            placeholder="Your answer" 
-            value={formData.department} 
-            onChange={handleChange} 
-            required 
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #555',
-              borderRadius: '5px',
-              backgroundColor: '#2a2a2a',
-              color: 'white',
-              fontSize: '1rem'
-            }}
-          />
-        </div>
-
-        {/* Number of Places */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Number of places where trees can be planted <span style={{ color: 'red' }}>*</span>
-          </label>
-          <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 0.5rem 0' }}>
-            उन स्थानों की संख्या जहाँ पेड़ लगाए जा सकते हैं
-          </p>
-          <input 
-            type="number" 
-            name="numPlaces" 
-            placeholder="Enter number of places" 
-            value={formData.numPlaces} 
-            onChange={handleChange} 
-            required 
-            min="1"
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #555',
-              borderRadius: '5px',
-              backgroundColor: '#2a2a2a',
-              color: 'white',
-              fontSize: '1rem'
-            }}
-          />
-        </div>
-
-        {/* Place Details */}
-        {formData.places.map((place, index) => (
-          <div key={index} style={{ 
-            border: '1px solid #555', 
-            borderRadius: '8px', 
-            padding: '1.5rem', 
-            backgroundColor: '#2a2a2a' 
-          }}>
-            <h3 style={{ color: '#4CAF50', marginBottom: '1rem' }}>
-              Place Details {index + 1} / स्थान विवरण {index + 1}
-            </h3>
-            
-            {/* Location/Address */}
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                Location/address of place <span style={{ color: 'red' }}>*</span>
-              </label>
-              <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 0.5rem 0' }}>
-                स्थान का पता
-              </p>
-              <input 
-                type="text" 
-                placeholder="Enter location/address" 
-                value={place.location} 
-                onChange={(e) => handlePlaceChange(index, 'location', e.target.value)} 
-                required 
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #555',
-                  borderRadius: '5px',
-                  backgroundColor: '#1c1c1c',
-                  color: 'white',
-                  fontSize: '1rem'
-                }}
-              />
-            </div>
-
-            {/* Owner */}
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                Owner of place <span style={{ color: 'red' }}>*</span>
-              </label>
-              <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 0.5rem 0' }}>
-                स्थान का मालिक
-              </p>
-              <input 
-                type="text" 
-                placeholder="Enter owner name" 
-                value={place.owner} 
-                onChange={(e) => handlePlaceChange(index, 'owner', e.target.value)} 
-                required 
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #555',
-                  borderRadius: '5px',
-                  backgroundColor: '#1c1c1c',
-                  color: 'white',
-                  fontSize: '1rem'
-                }}
-              />
-            </div>
-
-            {/* Number of Plants */}
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                Number of plants that can be planted <span style={{ color: 'red' }}>*</span>
-              </label>
-              <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 0.5rem 0' }}>
-                लगाए जा सकने वाले पौधों की संख्या
-              </p>
-              <input 
-                type="number" 
-                placeholder="Enter number of plants" 
-                value={place.numPlants} 
-                onChange={(e) => handlePlaceChange(index, 'numPlants', e.target.value)} 
-                required 
-                min="1"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #555',
-                  borderRadius: '5px',
-                  backgroundColor: '#1c1c1c',
-                  color: 'white',
-                  fontSize: '1rem'
-                }}
-              />
-            </div>
-
-            {/* Plant Names (Optional) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                Plant names (Optional)
-              </label>
-              <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 0.5rem 0' }}>
-                पौधों के नाम (वैकल्पिक)
-              </p>
-              <textarea 
-                placeholder="Enter plant names (comma separated)" 
-                value={place.plantNames} 
-                onChange={(e) => handlePlaceChange(index, 'plantNames', e.target.value)} 
-                rows="3"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #555',
-                  borderRadius: '5px',
-                  backgroundColor: '#1c1c1c',
-                  color: 'white',
-                  fontSize: '1rem',
-                  resize: 'vertical'
-                }}
-              />
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>First Name <span style={{ color: 'red' }}>*</span></label>
+              <input type="text" name="firstName" placeholder="पहला नाम" value={formData.firstName} onChange={handleChange} required style={inputStyle} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Last Name <span style={{ color: 'red' }}>*</span></label>
+              <input type="text" name="lastName" placeholder="अंतिम नाम" value={formData.lastName} onChange={handleChange} required style={inputStyle} />
             </div>
           </div>
-        ))}
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Gender <span style={{ color: 'red' }}>*</span></label>
+              <select name="gender" value={formData.gender} onChange={handleChange} required style={inputStyle}>
+                <option value="">Select</option>
+                <option value="Male">Male / पुरुष</option>
+                <option value="Female">Female / महिला</option>
+                <option value="Other">Other / अन्य</option>
+              </select>
+            </div>
 
-
-        {/* Contact Number */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Contact No. (Whatsapp) <span style={{ color: 'red' }}>*</span>
-          </label>
-          <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 0.5rem 0' }}>
-            संपर्क नंबर (व्हाट्सएप्प)
-          </p>
-          <input 
-            type="tel" 
-            name="contactNo" 
-            placeholder="Your answer" 
-            value={formData.contactNo} 
-            onChange={handleChange} 
-            required 
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #555',
-              borderRadius: '5px',
-              backgroundColor: '#2a2a2a',
-              color: 'white',
-              fontSize: '1rem'
-            }}
-          />
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Date of Birth <span style={{ color: 'red' }}>*</span></label>
+              <input type="date" name="dob" value={formData.dob} onChange={handleChange} required style={inputStyle} />
+            </div>
+          </div>
         </div>
 
+        {/* --- SECTION: Contact & Address --- */}
+        <div style={{ border: '1px solid #555', borderRadius: '8px', padding: '1rem', backgroundColor: '#2a2a2a' }}>
+          <h3 style={{ color: '#4CAF50', marginBottom: '0.75rem' }}>Contact & Address / संपर्क और पता</h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Phone <span style={{ color: 'red' }}>*</span></label>
+              <input type="tel" name="phone" placeholder="Your phone (WhatsApp)" value={formData.phone} onChange={handleChange} required style={inputStyle} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Email</label>
+              <input type="email" name="email" placeholder="Your email (optional)" value={formData.email} onChange={handleChange} style={inputStyle} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>State <span style={{ color: 'red' }}>*</span></label>
+              <input type="text" placeholder="State / राज्य" value={formData.address.state} onChange={(e) => handleAddressChange('state', e.target.value)} required style={inputStyle} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>District <span style={{ color: 'red' }}>*</span></label>
+              <input type="text" placeholder="District / जिला" value={formData.address.district} onChange={(e) => handleAddressChange('district', e.target.value)} required style={inputStyle} />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>City <span style={{ color: 'red' }}>*</span></label>
+              <input type="text" placeholder="City / शहर" value={formData.address.city} onChange={(e) => handleAddressChange('city', e.target.value)} required style={inputStyle} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Location (specific) <span style={{ color: 'red' }}>*</span></label>
+              <input type="text" placeholder="Location / स्थान" value={formData.address.location} onChange={(e) => handleAddressChange('location', e.target.value)} required style={inputStyle} />
+            </div>
+          </div>
+        </div>
+
+        {/* --- SECTION: Occupation --- */}
+        <div style={{ border: '1px solid #555', borderRadius: '8px', padding: '1rem', backgroundColor: '#2a2a2a' }}>
+          <h3 style={{ color: '#4CAF50', marginBottom: '0.75rem' }}>Occupation / पेशा</h3>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Occupation <span style={{ color: 'red' }}>*</span></label>
+            <select name="occupation" value={formData.occupation} onChange={handleChange} required style={inputStyle}>
+              <option value="">Select</option>
+              <option value="Student">Student</option>
+              <option value="Employee">Employee</option>
+              <option value="Self-Employee">Self-Employee</option>
+              <option value="Entrepreneur">Entrepreneur</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          {/* conditional occupation details */}
+          {formData.occupation === 'Student' && (
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Name of School/College/Institute <span style={{ color: 'red' }}>*</span></label>
+              <input type="text" value={formData.occupationDetails.schoolName} onChange={(e) => handleOccupationDetailChange('schoolName', e.target.value)} required style={inputStyle} placeholder="School / College / Institute" />
+            </div>
+          )}
+
+          {formData.occupation === 'Employee' && (
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Name of Employer / Company</label>
+              <input type="text" value={formData.occupationDetails.employeeCompany} onChange={(e) => handleOccupationDetailChange('employeeCompany', e.target.value)} style={inputStyle} placeholder="Employer / Company" />
+            </div>
+          )}
+
+          {formData.occupation === 'Self-Employee' && (
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Business Name</label>
+              <input type="text" value={formData.occupationDetails.selfBusinessName} onChange={(e) => handleOccupationDetailChange('selfBusinessName', e.target.value)} style={inputStyle} placeholder="Business name" />
+            </div>
+          )}
+
+          {formData.occupation === 'Entrepreneur' && (
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Business Name</label>
+              <input type="text" value={formData.occupationDetails.entrepreneurBusiness} onChange={(e) => handleOccupationDetailChange('entrepreneurBusiness', e.target.value)} style={inputStyle} placeholder="Business name" />
+            </div>
+          )}
+
+          {formData.occupation === 'Other' && (
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Please specify</label>
+              <input type="text" value={formData.occupationDetails.otherOccupation} onChange={(e) => handleOccupationDetailChange('otherOccupation', e.target.value)} style={inputStyle} placeholder="Your occupation" />
+            </div>
+          )}
+        </div>
         {/* Submit Button */}
         <button 
           type="submit" 

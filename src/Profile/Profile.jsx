@@ -200,7 +200,9 @@ toast.success("Form deleted!!");
       `}</style>
 
       <div className="profile-container">
-        {auth?.user ? (
+        {
+        auth?.user ?
+         (
           <>
             <h2 className="profile-header">My Profile</h2>
 
@@ -312,9 +314,12 @@ toast.success("Form deleted!!");
               </table>
             </div>
           </>
-        ) : (
-          <h1 className="no-access">Please log in</h1>
-        )}
+        ) :
+        //  (
+        //   <h1 className="no-access">Please log in</h1>
+        // )
+        null
+        }
       </div>
     </>
   );
