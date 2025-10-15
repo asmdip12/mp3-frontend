@@ -36,20 +36,7 @@ export default function TreeForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // special handling for number-of-places so we keep place entries in sync
-    if (name === 'numPlaces') {
-      const num = parseInt(value, 10) || 0;
-      setFormData(prev => {
-        const newPlaces = Array.from({ length: num }, (_, index) => prev.places[index] || {
-          location: '',
-          owner: '',
-          numPlants: '',
-          plantNames: ''
-        });
-        return { ...prev, numPlaces: value, places: newPlaces };
-      });
-      return;
-    }
+    
 
     // if occupation changes, reset occupation-specific details
     if (name === 'occupation') {
@@ -90,14 +77,7 @@ export default function TreeForm() {
     }));
   };
 
-  const handlePlaceChange = (index, field, value) => {
-    const updatedPlaces = [...formData.places];
-    updatedPlaces[index] = {
-      ...updatedPlaces[index],
-      [field]: value
-    };
-    setFormData(prev => ({ ...prev, places: updatedPlaces }));
-  };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,13 +100,6 @@ export default function TreeForm() {
         occupation: formData.occupation,
         occupationDetails: formData.occupationDetails,
         department: formData.department.trim(),
-        numPlaces: Number(formData.numPlaces),
-        places: formData.places.map(place => ({
-          location: (place.location || '').trim(),
-          owner: (place.owner || '').trim(),
-          numPlants: Number(place.numPlants),
-          plantNames: (place.plantNames || '').trim()
-        })),
         submittedby: auth.user.id
       };
 
