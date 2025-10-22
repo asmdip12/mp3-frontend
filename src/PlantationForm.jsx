@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { toast } from "react-toastify";
+import { useAuth } from './AuthContext';
 
 export default function PlantationForm() {
+  const { auth } = useAuth(); // ✅ Use auth context
   const [formData, setFormData] = useState({
     state: '',
     district: '',
@@ -60,7 +62,12 @@ export default function PlantationForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    toast.info("Uploading images and submitting form...", { autoClose: 2000 });
+
+    if (!auth?.user?.id) {
+      toast.error("User not logged in");
+      setLoading(false);
+      return;
+    }
 
     try {
       const placePhotoUrl = await uploadToCloudinary(formData.placePhoto, presets.placePhoto);
@@ -82,10 +89,11 @@ export default function PlantationForm() {
         adharSide2Url,
         mobile: formData.mobile,
         numPlants: Number(formData.numPlants),
-        plantNames: formData.plantNames
+        plantNames: formData.plantNames,
+        submittedby: auth.user.id, // ✅ Added submittedby
       };
 
-      const response = await fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/subform", {
+      const response = await fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/subformp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
@@ -126,7 +134,7 @@ export default function PlantationForm() {
         {/* Location Section */}
         <div>
           <h3 style={{ color: '#4CAF50', marginBottom: '1rem' }}>📍 Location Details</h3>
-          {['state','district','cityVillage','placeName'].map((field, idx) => (
+          {['state','district','city/Village','placeName'].map((field, idx) => (
             <div key={idx} style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
                 {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} <span style={{ color: 'red' }}>*</span>

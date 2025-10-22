@@ -99,7 +99,7 @@ export default function TreeForm() {
         },
         occupation: formData.occupation,
         occupationDetails: formData.occupationDetails,
-        department: formData.department.trim(),
+        // department: formData.department.trim(),
         submittedby: auth.user.id
       };
 

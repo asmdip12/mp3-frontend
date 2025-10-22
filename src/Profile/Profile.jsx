@@ -1,326 +1,305 @@
-import { useEffect, useState } from "react";
+// ProfilePage.jsx
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { AlignCenter } from "lucide-react";
-import PlacesEditor from "./PlacesEditor"; // adjust path
-
 
 export default function ProfilePage() {
   const { auth } = useAuth();
-  const [forms, setForms] = useState([]);
-  const [editingForm, setEditingForm] = useState(null);
-  const [formDraft, setFormDraft] = useState({});
-const [editingPlace, setEditingPlace] = useState(null); // {formId, placeId}
-const [showPlaceDropdown, setShowPlaceDropdown] = useState({});
+  const [profileDraft, setProfileDraft] = useState(null);
+  const [editingProfile, setEditingProfile] = useState(false);
 
+  const [treeForms, setTreeForms] = useState([]);
+  const [plantForms, setPlantForms] = useState([]);
+  const [loading, setLoading] = useState(false);
 
+  const [editingFormModalOpen, setEditingFormModalOpen] = useState(false);
+  const [editingFormData, setEditingFormData] = useState(null);
+  const [editingFormId, setEditingFormId] = useState(null);
+  const [editingPlaceId, setEditingPlaceId] = useState(null);
+
+  // Load user forms
   useEffect(() => {
-  if (!auth?.user) return;
+    if (!auth?.user) return;
+    setLoading(true);
 
-  fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/getformdata", {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-  })
-    .then((res) => res.json())
-    .then((data) => {
-
-      const myForms = data.filter(
-        (form) => form.submittedby?.toString() === auth.user.id?.toString()
-      );
-
-      setForms(myForms);
+    // Fetch tree forms
+    fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/getformdata", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
     })
-    .catch((err) => console.error("Error fetching user forms:", err));
-}, [auth?.user]);
+      .then((res) => res.json())
+      .then((data) => {
+        const my = data.filter((f) => f.submittedby?.toString() === auth.user.id?.toString());
+        setTreeForms(my);
+      })
+      .catch((err) => console.error("Error fetching tree forms:", err));
 
-  const handleEdit = (formId, place) => {
-  setEditingPlace({ formId, placeId: place._id });
-  setFormDraft({
-    location: place.location,
-    numPlants: place.numPlants,
-    owner: place.owner,
-    plantNames: place.plantNames,
-  });
-};
+    // Fetch plantation forms
+    fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/getformdatap", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Raw plantation forms from backend:", data);
+        const my = data.filter(f => f.submittedby?.toString() === auth.user.id?.toString());
+        console.log("Filtered for current user:", my);
+        setPlantForms(my);
+      })      
+      .catch((err) => console.error("Error fetching plantation forms:", err))
+      .finally(() => setLoading(false));
+  }, [auth?.user]);
 
-const handleUpdate = (formId, placeId, updatedPlace) => {
-  const updatedForms = forms.map((form) => {
-    if (form._id === formId) {
-      return {
-        ...form,
-        places: form.places.map((p) =>
-          p._id === placeId ? { ...p, ...updatedPlace } : p
-        ),
-      };
+  // Handle profile input changes
+  const handleProfileInput = (e) => {
+    const { name, value } = e.target;
+    if (!profileDraft) return;
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setProfileDraft((p) => ({ ...p, [parent]: { ...(p[parent] || {}), [child]: value } }));
+    } else {
+      setProfileDraft((p) => ({ ...p, [name]: value }));
     }
-    return form;
-  });
+  };
 
-  const updatedForm = updatedForms.find((f) => f._id === formId);
+  // Save profile changes
+  const handleSaveProfile = async () => {
+    if (!profileDraft) return;
+    try {
+      const res = await fetch("https://mp3-backend-f7n3.onrender.com/api/user/profile", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileDraft),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      await res.json();
+      setEditingProfile(false);
+      toast.success("Profile updated ✅");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update profile");
+    }
+  };
 
-  fetch(`https://mp3-backend-f7n3.onrender.com/api/treeform/updateform/${formId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updatedForm),
-    credentials: "include",
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error("Failed to update form");
-      return res.json();
-    })
-    .then((savedForm) => {
-      setForms((prev) =>
-        prev.map((f) => (f._id === formId ? savedForm : f))
+  // Open edit modal for a place
+  const openEditFormModal = (formId, placeId) => {
+    const form = plantForms.find((f) => f._id === formId);
+    if (!form) return;
+    const place = (form.places || []).find((p) => p._id === placeId);
+    if (!place) return;
+
+    setEditingFormData({ ...place });
+    setEditingFormId(formId);
+    setEditingPlaceId(placeId);
+    setEditingFormModalOpen(true);
+  };
+  
+
+  // Save edited place data
+  const handleSaveEditedPlace = async () => {
+    if (!editingFormData || !editingFormId || !editingPlaceId) return;
+    try {
+      const updatedPlace = {
+        state: editingFormData.state,
+        district: editingFormData.district,
+        cityVillage: editingFormData.cityVillage,
+        placeName: editingFormData.placeName,
+        location: editingFormData.location,
+        caretakerName: editingFormData.caretakerName,
+        occupation: editingFormData.occupation,
+        designation: editingFormData.designation,
+        numPlants: Number(editingFormData.numPlants || 0),
+        plantNames: editingFormData.plantNames,
+      };
+
+      setPlantForms((prev) =>
+        prev.map((form) =>
+          form._id === editingFormId
+            ? { ...form, places: form.places.map((p) => (p._id === editingPlaceId ? { ...p, ...updatedPlace } : p)) }
+            : form
+        )
       );
-      setEditingPlace(null);
-      toast.success("Place updated successfully ✅");
-    })
-    .catch((err) => console.error(err));
-};
 
+      const updatedForm = plantForms
+        .map((f) => (f._id === editingFormId ? { ...f } : f))
+        .find((f) => f._id === editingFormId);
+      updatedForm.places = updatedForm.places.map((p) => (p._id === editingPlaceId ? { ...p, ...updatedPlace } : p));
 
+      const res = await fetch(`https://mp3-backend-f7n3.onrender.com/api/treeform/updateformp/${editingFormId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedForm),
+      });
+      if (!res.ok) throw new Error("Failed to update form on server");
+      const saved = await res.json();
 
-const handleDelete = (formId) => {
-  // Send delete request to backend
-  fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/deleteform", {
-  method: "DELETE",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ id: formId }),
-  credentials: "include",
-})
+      setPlantForms((prev) => prev.map((f) => (f._id === saved._id ? saved : f)));
+      toast.success("Form updated ✅");
+      setEditingFormModalOpen(false);
+      setEditingFormData(null);
+      setEditingFormId(null);
+      setEditingPlaceId(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save changes");
+    }
+  };
 
-    .then((res) => {
+  // Delete plantation form
+  const handleDeletePlantForm = async (formId) => {
+    if (!confirm("Are you sure you want to delete this form?")) return;
+    try {
+      const res = await fetch("https://mp3-backend-f7n3.onrender.com/api/treeform/deleteformp", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: formId }),
+      });
       if (!res.ok) throw new Error("Failed to delete form");
-      return res.json();
-    })
-    .then(() => {
-toast.success("Form deleted!!");
-      // remove from local state
-      setForms((prevForms) => prevForms.filter((f) => f._id !== formId));
-    })
-    .catch((err) => console.error(err));
-};
+      await res.json();
+      setPlantForms((prev) => prev.filter((f) => f._id !== formId));
+      toast.success("Form deleted");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete form");
+    }
+  };
 
+  // Inline image preview
+  const ImgPreview = ({ src, label }) => {
+    if (!src) return null;
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>{label}</div>
+        <img src={src} alt={label} style={{ width: "100%", maxWidth: 240, borderRadius: 8, border: "1px solid #ddd" }} />
+      </div>
+    );
+  };
+
+  // Styles
+  const styles = {
+    page: { padding: 20, minHeight: "100vh", background: "#f8f9fa", color: "#212529" },
+    header: { textAlign: "center", marginBottom: 20, fontSize: 28, fontWeight: 600 },
+    card: { background: "#fff", borderRadius: 10, padding: 18, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", marginBottom: 16 },
+    smallCard: { background: "#fff", borderRadius: 10, padding: 12, boxShadow: "0 1px 6px rgba(0,0,0,0.06)" },
+    tableHeader: { background: "#6c757d", color: "#fff", borderRadius: "8px 8px 0 0", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr 2fr 1fr 160px", alignItems: "center" },
+    tableRow: { display: "grid", gridTemplateColumns: "1fr 2fr 1fr 160px", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #eee", background: "#fff" },
+    placeItem: { marginBottom: 8, padding: 12, background: "#f1f3f4", borderRadius: 8, borderLeft: "4px solid #007bff" },
+    btn: { padding: "8px 10px", borderRadius: 6, border: "none", cursor: "pointer" },
+    editBtn: { background: "#007bff", color: "#fff" },
+    deleteBtn: { background: "#e74c3c", color: "#fff" },
+    modalBackdrop: { position: "fixed", left: 0, top: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" },
+    modal: { width: "90%", maxWidth: 820, background: "#fff", borderRadius: 10, padding: 16 },
+    input: { padding: 10, borderRadius: 6, border: "1px solid #ccc", width: "100%", boxSizing: "border-box", marginBottom: 8 },
+    grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
+  };
 
   return (
-    <>
-      <style jsx>{`
-        .profile-container {
-          
-          padding: 20px;
-          background-color: #f8f9fa;
-          min-height: calc(100vh - 84px);
-          color: #212529;
-        }
+    <div style={styles.page}>
+      <h2 style={styles.header}>My Profile</h2>
 
-        .profile-header {
-          font-size: 2rem;
-          font-weight: 600;
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .profile-info {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 12px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          margin-bottom: 2rem;
-        }
-
-        .profile-info p {
-          margin: 0.5rem 0;
-          font-size: 1rem;
-          color: #495057;
-        }
-
-        .results-count {
-          margin-bottom: 1rem;
-          color: #6c757d;
-          font-size: 0.95rem;
-        }
-
-        .table-container {
-          background: white;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          overflow-x: auto;
-        }
-
-        .data-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 0.95rem;
-        }
-
-        .table-header {
-          background-color: #6c757d;
-          color: white;
-        }
-
-        .table-header th {
-          padding: 1rem 0.75rem;
-          text-align: left;
-          font-weight: 600;
-          border-bottom: 3px solid #495057;
-        }
-
-        .table-cell {
-          padding: 1rem 0.75rem;
-          border-bottom: 1px solid #dee2e6;
-          color: #495057;
-          vertical-align: top;
-        }
-
-        .table-row:nth-child(even) {
-          background-color: #f8f9fa;
-        }
-
-        .place-item {
-          margin-bottom: 0.75rem;
-          padding: 0.75rem;
-          background-color: #f1f3f4;
-          border-radius: 6px;
-          border-left: 4px solid #007bff;
-        }
-
-        .place-label {
-          font-weight: 600;
-          margin-right: 0.5rem;
-          color: #343a40;
-        }
-
-        .place-value {
-          margin-right: 1rem;
-          color: #495057;
-        }
-      `}</style>
-
-      <div className="profile-container">
-        {
-        auth?.user ?
-         (
-          <>
-            <h2 className="profile-header">My Profile</h2>
-
-            {/* User Info */}
-            <div className="profile-info">
-              <p><strong>Name:</strong> {auth.user.name}</p>
-              <p><strong>Email:</strong> {auth.user.email}</p>
-              <p><strong>Forms Submitted:</strong> {forms.length}</p>
+      {/* Profile card */}
+      <div style={styles.card}>
+        {loading ? (
+          <div>Loading...</div>
+        ) : auth.user ? (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 600 }}>{auth.user.firstName} {auth.user.lastName}</div>
+              <div style={{ marginTop: 8 }}>
+                <div style={{ marginBottom: 6 }}><strong>Name:</strong> {auth.user.firstName} {auth.user.lastName}</div>
+                <div style={{ marginBottom: 6 }}><strong>Email:</strong> {auth.user.email}</div>
+                <div style={{ marginBottom: 6 }}><strong>Forms Submitted:</strong> {treeForms.length}</div>
+              </div>
             </div>
 
-            {/* Count */}
-            <div className="results-count">
-              Showing {forms.length} forms you have submitted
+            <div style={{ textAlign: "right" }}>
+              <button
+                style={{ ...styles.btn, ...styles.editBtn }}
+                onClick={() => setEditingProfile(true)}
+              >
+                Edit Profile
+              </button>
             </div>
+          </div>
+        ) : (
+          <div>No profile loaded</div>
+        )}
+      </div>
 
-            {/* Table */}
-            <div className="table-container">
-              <table className="data-table">
-                <thead className="table-header">
-                  <tr>
-                    <th style={{ textAlign: "center" }}>Department</th>
-                    <th style={{ textAlign: "center" }}>Places</th>
-                    <th style={{ textAlign: "center" }}>Submitted On</th>
-                    <th style={{ textAlign: "center" }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {forms.map((form, i) => (
-                    <tr key={i} className="table-row">
-                      <td className="table-cell">{form.department}</td>
-                      <td className="table-cell">
-  {form.places?.map((place, idx) => (
-    <div key={idx} className="place-item">
-      <span className="place-label">Location:</span>
-      <span className="place-value">{place.location}</span>
-      <span className="place-label">Plants:</span>
-      <span className="place-value">{place.numPlants}</span>
-      <span className="place-label">Owner:</span>
-      <span className="place-value">{place.owner}</span>
-      <span className="place-label">Names:</span>
-      <span className="place-value">{place.plantNames}</span>
-    </div>
-  ))}
-</td>
+      {/* Plantation forms */}
+      <div style={{ margin: "12px 0", color: "#6c757d" }}>Showing {plantForms.length} forms you have submitted</div>
 
-                      <td className="table-cell">
-                        {new Date(form.createdAt).toLocaleString()}
-                      </td>
-     <td className="updatedelete">
-  <PlacesEditor
-  places={form.places}
-  onSave={(index, updatedPlace) => {
-    const placeId = form.places[index]._id;
-    handleUpdate(form._id, placeId, updatedPlace);
-  }}
-/>
-
-  <button style={{ backgroundColor: "red" }}
-    onClick={() => {
-  toast(
-    ({ closeToast }) => (
-      <div>
-        <p>Are you sure you want to delete this form?</p>
-        <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.5rem" }}>
-          <button
-            onClick={() => {
-              handleDelete(form._id);
-              // toast.success("Form deleted!");
-              closeToast();
-            }}
-            style={{
-              backgroundColor: "#e74c3c",
-              color: "white",
-              border: "none",
-              padding: "0.3rem 0.6rem",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Yes
-          </button>
-          <button
-            onClick={closeToast}
-            style={{
-              backgroundColor: "#ccc",
-              color: "black",
-              border: "none",
-              padding: "0.3rem 0.6rem",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            No
-          </button>
+      <div style={{ borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+        <div style={styles.tableHeader}>
+          <div style={{ fontWeight: 600 }}>Department</div>
+          <div style={{ fontWeight: 600, textAlign: "center" }}>Places</div>
+          <div style={{ fontWeight: 600, textAlign: "center" }}>Submitted On</div>
+          <div style={{ fontWeight: 600, textAlign: "center" }}>Actions</div>
         </div>
-      </div>
-    ),
-    { autoClose: false } // keep toast open until user clicks Yes/No
-  );
-}}
 
-  >
-    Delete
-  </button>
-</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {plantForms.map((form) => (
+          <div key={form._id} style={{ background: "#fff" }}>
+            <div style={styles.tableRow}>
+              <div>{form.department || "-"}</div>
+
+              <div>
+                {(form.places || []).map((place) => (
+                  <div key={place._id} style={styles.placeItem}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div><strong>Location:</strong> {place.location || "-"}</div>
+                        <div style={{ marginTop: 6 }}><strong>Plants:</strong> {place.numPlants} <strong>Owner:</strong> {place.owner} <strong>Names:</strong> {place.plantNames}</div>
+                      </div>
+
+                      <div style={{ width: 160, textAlign: "right", display: "flex", flexDirection: "column", gap: 8 }}>
+                        <button style={{ ...styles.btn, ...styles.editBtn }} onClick={() => openEditFormModal(form._id, place._id)}>Edit</button>
+                        <button style={{ ...styles.btn, ...styles.deleteBtn }} onClick={() => handleDeletePlantForm(form._id)}>Delete</button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                      {place.placePhotoUrl && <img src={place.placePhotoUrl} alt="place" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6 }} />}
+                      {place.caretakerPhotoUrl && <img src={place.caretakerPhotoUrl} alt="caretaker" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6 }} />}
+                      {place.adharSide1Url && <img src={place.adharSide1Url} alt="adhar1" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6 }} />}
+                      {place.adharSide2Url && <img src={place.adharSide2Url} alt="adhar2" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6 }} />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ textAlign: "center" }}>{new Date(form.createdAt).toLocaleString()}</div>
+              <div style={{ textAlign: "center" }}><div style={{ color: "#888", fontSize: 12 }}>Manage places using buttons</div></div>
             </div>
-          </>
-        ) :
-        //  (
-        //   <h1 className="no-access">Please log in</h1>
-        // )
-        null
-        }
+          </div>
+        ))}
+
+        {plantForms.length === 0 && <div style={{ padding: 20, background: "#fff" }}>No plantation forms found</div>}
       </div>
-    </>
+
+      {/* Edit profile modal */}
+      {editingProfile && (
+        <div style={styles.modalBackdrop}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Edit Profile</h3>
+            <div style={styles.grid2}>
+              <input style={styles.input} name="firstName" placeholder="First Name" value={profileDraft?.firstName || auth.user.firstName || ""} onChange={handleProfileInput} />
+              <input style={styles.input} name="lastName" placeholder="Last Name" value={profileDraft?.lastName || auth.user.lastName || ""} onChange={handleProfileInput} />
+              <input style={styles.input} name="email" placeholder="Email" value={profileDraft?.email || auth.user.email || ""} onChange={handleProfileInput} />
+              <input style={styles.input} name="phone" placeholder="Phone" value={profileDraft?.phone || auth.user.phone || ""} onChange={handleProfileInput} />
+            </div>
+            <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button style={{ ...styles.btn, ...styles.deleteBtn }} onClick={() => setEditingProfile(false)}>Cancel</button>
+              <button style={{ ...styles.btn, ...styles.editBtn }} onClick={handleSaveProfile}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
